@@ -14,6 +14,7 @@ De forma breve, as transações saem das maquininhas de cartão e chegam até um
 - [Sonar](https://www.sonarsource.com)
 - [Docker](https://www.docker.com/)
 - [Swagger](http://localhost:8080/swagger-ui/index.html#)
+- [K6](https://k6.io/docs/)
 
 ## Funcionalidades
 
@@ -35,9 +36,17 @@ cd miniautorizador/docker && docker-compose up -d
 Abrir a IDE e executar a classe MiniAutorizadorApplication.java
 
 Acesse a documentação do Swagger para testar os serviços:
+
+[Swagger - http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
+
+## Rodar os teste de carga
+
+Baixar o executável do k6 no site [https://k6.io/docs/getting-started/installation/](https://k6.io/docs/getting-started/installation/) 
+e colocar na pasta k6
 ```
-http://localhost:8080/swagger-ui/index.html#
-``` 
+cd k6
+.\k6.exe run index.js --vus 1 --duration 100s --env NUMERO_CARTAO=987654321 --env SENHA_CARTAO=987654321
+```
 
 ## Contratos dos serviços
 
