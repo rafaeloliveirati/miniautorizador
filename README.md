@@ -21,6 +21,24 @@ De forma breve, as transações saem das maquininhas de cartão e chegam até um
 - Verificação de saldo
 - Processamento de uma transação
 
+## Rodar o projeto
+Executar o clone do projeto
+```
+git clone https://github.com/rafaeloliveirati/miniautorizador.git
+```
+
+A partir da raiz do projeto executar o comando abaixo para rodar o docker:
+```
+cd miniautorizador/docker && docker-compose up -d
+```
+
+Abrir a IDE e executar a classe MiniAutorizadorApplication.java
+
+Acesse a documentação do Swagger para testar os serviços:
+```
+http://localhost:8080/swagger-ui/index.html#
+``` 
+
 ## Contratos dos serviços
 
 ### Criar novo cartão
