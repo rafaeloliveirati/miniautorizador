@@ -1,7 +1,7 @@
 package com.vr.mini.autorizador.miniautorizador.mapper;
 
-import com.vr.mini.autorizador.miniautorizador.dto.request.CardRequest;
-import com.vr.mini.autorizador.miniautorizador.dto.response.CardResponse;
+import com.vr.mini.autorizador.miniautorizador.dto.request.CardRequestDTO;
+import com.vr.mini.autorizador.miniautorizador.dto.response.CardResponseDTO;
 import com.vr.mini.autorizador.miniautorizador.model.Card;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -12,7 +12,8 @@ public interface CardMapper {
   CardMapper INSTANCE = Mappers.getMapper(CardMapper.class);
 
   @Mapping(target = "id", ignore = true)
-  Card toEntity(CardRequest cardRequest);
+  @Mapping(target = "balance", ignore = true)
+  Card toEntity(CardRequestDTO request);
 
-  CardResponse toResponse(Card card);
+  CardResponseDTO toResponse(Card card);
 }

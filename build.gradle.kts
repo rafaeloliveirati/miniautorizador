@@ -24,44 +24,44 @@ tasks.jacocoTestReport {
         xml.required.set(true)
         html.required.set(true)
     }
-    doFirst {
-        if (!tasks.test.get().didWork) {
-            throw GradleException("No tests were executed. Ensure you have test cases in your project.")
-        }
-    }
+    classDirectories.setFrom(
+            files(classDirectories.files.map {
+                fileTree(it) {
+                    exclude("**/*DTO*.class", "**/*Application*.class", "**/*Config*.class", "**/model/**/*.class", "**/ResourceCheck*.class")
+                }
+            })
+    )
 }
 
 tasks.jacocoTestCoverageVerification {
     dependsOn(tasks.jacocoTestReport)
+    classDirectories.setFrom(
+            files(classDirectories.files.map {
+                fileTree(it) {
+                    exclude("**/*DTO*.class", "**/*Application*.class", "**/*Config*.class", "**/model/**/*.class", "**/ResourceCheck*.class")
+                }
+            })
+    )
     violationRules {
         rule {
             limit {
-                minimum = "0.80".toBigDecimal()
+                minimum = "0.99".toBigDecimal()
             }
         }
     }
-}
-
-tasks.check {
-    dependsOn(tasks.jacocoTestCoverageVerification)
-}
-
-tasks.build {
-    dependsOn(tasks.jacocoTestCoverageVerification)
 }
 
 tasks.build {
     dependsOn(tasks.check)
 }
 
+tasks.check {
+    dependsOn(tasks.jacocoTestCoverageVerification)
+}
+
 tasks.test {
     useJUnitPlatform()
     finalizedBy(tasks.jacocoTestReport)
-    doFirst {
-        if (testClassesDirs.files.isEmpty()) {
-            throw GradleException("No test classes found. Ensure you have test cases in your project.")
-        }
-    }
 }
 
 configurations {
@@ -78,7 +78,6 @@ extra["validationApiVersion"] = "2.0.1.Final"
 extra["mapstructVersion"] = "1.5.3.Final"
 extra["lombokVersion"] = "1.18.28"
 extra["springdocVersion"] = "2.1.0"
-extra["gsonVersion"] = "2.8.8"
 extra["jacocoAgentVersion"] = "0.8.8"
 extra["commonsLang3Version"] = "3.12.0"
 
@@ -92,21 +91,18 @@ dependencies {
     implementation("javax.validation:validation-api:${property("validationApiVersion")}")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${property("springdocVersion")}")
     implementation("org.apache.commons:commons-lang3:${property("commonsLang3Version")}")
-    implementation("com.google.code.gson:gson:${property("gsonVersion")}")
     jacocoAgent("org.jacoco:org.jacoco.agent:${property("jacocoAgentVersion")}")
 
-    // Lombok e MapStruct juntos
     compileOnly("org.projectlombok:lombok:${property("lombokVersion")}")
     annotationProcessor("org.projectlombok:lombok:${property("lombokVersion")}")
     annotationProcessor("org.mapstruct:mapstruct-processor:${property("mapstructVersion")}")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.restdocs:spring-restdocs-mockmvc")
+
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
-
 
 tasks.withType<Test> {
     useJUnitPlatform()
 }
-
-

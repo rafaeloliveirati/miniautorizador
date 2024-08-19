@@ -1,6 +1,8 @@
 package com.vr.mini.autorizador.miniautorizador.service;
 
-import com.vr.mini.autorizador.miniautorizador.dto.request.TransactionRequest;
+import static com.vr.mini.autorizador.miniautorizador.ErrorMessages.CARD_NOT_FOUND;
+
+import com.vr.mini.autorizador.miniautorizador.dto.request.TransactionRequestDTO;
 import com.vr.mini.autorizador.miniautorizador.exception.CardNotFoundException;
 import com.vr.mini.autorizador.miniautorizador.exception.InsufficientBalanceException;
 import com.vr.mini.autorizador.miniautorizador.exception.InvalidPasswordException;
@@ -8,6 +10,7 @@ import com.vr.mini.autorizador.miniautorizador.exception.TransactionInProgressEx
 import com.vr.mini.autorizador.miniautorizador.model.Card;
 import com.vr.mini.autorizador.miniautorizador.repository.CardRepository;
 import com.vr.mini.autorizador.miniautorizador.util.RedisUtil;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,55 +28,57 @@ public class TransactionService {
     this.redisUtil = redisUtil;
   }
 
-  public String performTransaction(TransactionRequest request) {
-    try {
-      log.debug("Starting perform transaction for card: {}", request.getNumber());
+  public String performTransaction(TransactionRequestDTO request) {
+    log.debug("Starting perform transaction for card: {}", request.getNumber());
 
-      /* Decidi criar no redis uma chave com o número do cartão para garantir
-      que não haja duas transações simultâneas para o mesmo cartão */
-      redisUtil.set(request.getNumber(), "processing");
+    Card card = getCardByRequest(request);
 
-      Card card = getCardByRequest(request);
+    validate(request, card);
 
-      validate(request, card);
+    redisUtil.set(request.getNumber(), "processing");
 
-      card.setBalance(card.getBalance().subtract(request.getValue()));
-      cardRepository.save(card);
+    card.setBalance(card.getBalance().subtract(request.getValue()));
+    cardRepository.save(card);
 
-      log.debug("Transaction performed successfully for card with number {}", request.getNumber());
+    log.debug("Transaction performed successfully for card with number {}", request.getNumber());
 
-      return "OK";
-    } finally {
-      redisUtil.delete(request.getNumber());
-    }
+    redisUtil.delete(request.getNumber());
+    return "OK";
   }
 
-  private void validate(TransactionRequest request, Card card) {
-    if (!card.getPassword().equals(request.getPassword())) {
-      log.error("Invalid password for card with number {}", request.getNumber());
-      throw new InvalidPasswordException("SENHA_INVALIDA");
-    }
+  private void validate(TransactionRequestDTO request, Card card) {
+    Optional.ofNullable(card.getPassword())
+        .filter(password -> password.equals(request.getPassword()))
+        .orElseThrow(
+            () -> {
+              log.error("Invalid password for card with number {}", request.getNumber());
+              throw new InvalidPasswordException();
+            });
 
-    if (redisUtil.exists(request.getNumber())) {
-      log.error("Transaction already in progress for card with number {}", request.getNumber());
-      throw new TransactionInProgressException("TRANSACTION_ALREADY_IN_PROGRESS");
-    }
+    Optional.of(redisUtil.exists(request.getNumber()))
+        .filter(exists -> !exists)
+        .orElseThrow(
+            () -> {
+              log.error("Transaction already in progress for card; {}", request.getNumber());
+              throw new TransactionInProgressException();
+            });
 
-    if (card.getBalance().compareTo(request.getValue()) < 0) {
-
-
-      log.error("Insufficient balance for card: {}", request.getNumber());
-      throw new InsufficientBalanceException("SALDO_INSUFICIENTE");
-    }
+    Optional.of(card.getBalance())
+        .filter(balance -> balance.compareTo(request.getValue()) >= 0)
+        .orElseThrow(
+            () -> {
+              log.error("Insufficient balance for card: {}", request.getNumber());
+              throw new InsufficientBalanceException();
+            });
   }
 
-  private Card getCardByRequest(TransactionRequest request) {
+  private Card getCardByRequest(TransactionRequestDTO request) {
     return cardRepository
         .findByNumber(request.getNumber())
         .orElseThrow(
             () -> {
               log.error("Card with number {} not found", request.getNumber());
-              return new CardNotFoundException("CARTAO_INEXISTENTE");
+              throw new CardNotFoundException(CARD_NOT_FOUND.getMessage());
             });
   }
 }

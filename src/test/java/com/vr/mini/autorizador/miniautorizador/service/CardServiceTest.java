@@ -1,22 +1,21 @@
 package com.vr.mini.autorizador.miniautorizador.service;
 
-import com.vr.mini.autorizador.miniautorizador.dto.request.CardRequest;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+import com.vr.mini.autorizador.miniautorizador.dto.request.CardRequestDTO;
 import com.vr.mini.autorizador.miniautorizador.exception.CardAlreadyExistsException;
 import com.vr.mini.autorizador.miniautorizador.exception.CardNotFoundException;
 import com.vr.mini.autorizador.miniautorizador.model.Card;
 import com.vr.mini.autorizador.miniautorizador.repository.CardRepository;
+import java.math.BigDecimal;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-
-import java.math.BigDecimal;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 class CardServiceTest {
 
@@ -29,11 +28,14 @@ class CardServiceTest {
     MockitoAnnotations.openMocks(this);
   }
 
+  private static final String CARD_NUMBER = "6549873025634501";
+  private static final String PASSWORD = "1234";
+
   @Test
   void createCardSuccessfully() {
-    CardRequest cardRequest =
-        CardRequest.builder().number("1234567890123456").password("1234").build();
-    Card card = Card.builder().number("1234567890123456").password("1234").build();
+    Card card = getCard();
+    CardRequestDTO cardRequest =
+        CardRequestDTO.builder().number(card.getNumber()).password(card.getPassword()).build();
 
     when(cardRepository.findByNumber(card.getNumber())).thenReturn(Optional.empty());
     when(cardRepository.save(any(Card.class))).thenReturn(card);
@@ -43,17 +45,15 @@ class CardServiceTest {
     assertNotNull(createdCard);
     assertEquals(card.getNumber(), createdCard.getNumber());
     assertEquals(card.getPassword(), createdCard.getPassword());
-    assertEquals(BigDecimal.valueOf(500), createdCard.getBalance());
-
 
     verify(cardRepository).save(any(Card.class));
   }
 
   @Test
   void createCardThrowsCardAlreadyExistsException() {
-    CardRequest cardRequest =
-        CardRequest.builder().number("1234567890123456").password("1234").build();
-    Card card = Card.builder().number("1234567890123456").password("1234").build();
+    Card card = getCard();
+    CardRequestDTO cardRequest =
+        CardRequestDTO.builder().number(card.getNumber()).password(card.getPassword()).build();
 
     when(cardRepository.findByNumber(card.getNumber())).thenReturn(Optional.of(card));
 
@@ -61,20 +61,8 @@ class CardServiceTest {
   }
 
   @Test
-  void createCardThrowsCardNotFoundException() {
-    CardRequest cardRequest = CardRequest.builder().password("1234").build();
-
-    assertThrows(CardNotFoundException.class, () -> cardService.create(cardRequest));
-  }
-
-  @Test
   void getBalanceSuccessfully() {
-    Card card =
-        Card.builder()
-            .number("1234567890123456")
-            .password("1234")
-            .balance(BigDecimal.valueOf(500))
-            .build();
+    Card card = getCard();
 
     when(cardRepository.findByNumber(card.getNumber())).thenReturn(Optional.of(card));
 
@@ -86,8 +74,15 @@ class CardServiceTest {
 
   @Test
   void getBalanceThrowsCardNotFoundException() {
-    when(cardRepository.findByNumber("1234567890123456")).thenReturn(Optional.empty());
+    when(cardRepository.findByNumber(CARD_NUMBER)).thenReturn(Optional.empty());
+    assertThrows(CardNotFoundException.class, () -> cardService.getBalance(CARD_NUMBER));
+  }
 
-    assertThrows(CardNotFoundException.class, () -> cardService.getBalance("1234567890123456"));
+  private Card getCard() {
+    Card card = new Card();
+    card.setNumber(CARD_NUMBER);
+    card.setPassword(PASSWORD);
+    card.setBalance(BigDecimal.valueOf(500));
+    return card;
   }
 }

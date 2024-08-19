@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ResourceCheckController {
 
   @GetMapping("/resource-check")
-  public ResponseEntity.BodyBuilder checkResource() {
-    return ResponseEntity.ok();
+  public ResponseEntity<Void> checkResource() {
+    return ResponseEntity.ok().build();
   }
 }
